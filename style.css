@@ -4,7 +4,7 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
-    background-color: #f0f0f0; /* پس‌زمینه کلی روشن */
+    background-color: #f0f0f0;
     font-family: Arial, sans-serif;
 }
 
@@ -18,16 +18,28 @@ body {
     background-color: #f5f5f5;
 }
 
-#intro, #info {
-    color: #333;
-    font-size: 20px;
-    margin-top: 10px;
+#intro, #game-over {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.9);
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    z-index: 10;
 }
 
-#intro {
-    background: rgba(255, 255, 255, 0.8);
-    padding: 20px;
-    border-radius: 10px;
+#info {
+    color: #333;
+    font-size: 20px;
+    position: absolute;
+    bottom: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 0 20px;
 }
 
 #intro button, #game-over button {
@@ -45,15 +57,6 @@ body {
     background-color: #008B8B;
 }
 
-#info {
-    position: absolute;
-    bottom: 10px;
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 20px;
-}
-
 #score, #correct-hits {
     right: 20px;
 }
@@ -66,16 +69,4 @@ body {
     margin-top: 10px;
     font-size: 24px;
     color: #FFD700;
-}
-
-#game-over {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background: rgba(255, 255, 255, 0.9);
-    padding: 30px;
-    border-radius: 15px;
-    text-align: center;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
