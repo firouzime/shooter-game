@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>First-Person Shooter Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="intro" style="display: none;">
+            <h2>Welcome to the Shooter Game!</h2>
+            <p>Click on targets to destroy them with the right weapon.</p>
+            <p>Use 1, 2, 3 or Ctrl, Alt, Space to switch weapons.</p>
+            <p>Hit the correct targets to score points and advance.</p>
+            <button onclick="startGame()">Start Game</button>
+        </div>
+        <canvas id="gameCanvas" style="display: none;"></canvas>
+        <div id="info" style="display: none;">
+            <div id="score">Score: 0</div>
+            <div id="stage">Stage: 1</div>
+            <div id="timer">Time: 30</div>
+            <div id="message"></div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
