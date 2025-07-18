@@ -1,4 +1,4 @@
-﻿const canvas = document.getElementById('gameCanvas');
+const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 600;
@@ -13,9 +13,13 @@ let timerInterval;
 const scoreDisplay = document.getElementById('score');
 const stageDisplay = document.getElementById('stage');
 const timerDisplay = document.getElementById('timer');
+const weaponDisplay = document.getElementById('weapon');
+const correctHitsDisplay = document.getElementById('correct-hits');
 const messageDisplay = document.getElementById('message');
 const introScreen = document.getElementById('intro');
 const infoDisplay = document.getElementById('info');
+const gameOverScreen = document.getElementById('game-over');
+const gameOverMessage = document.getElementById('game-over-message');
 let currentWeapon = 'blackDot';
 let gameRunning = false;
 
@@ -43,16 +47,16 @@ class Target {
         ctx.beginPath();
         if (this.type === 'circle') {
             ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-            ctx.fillStyle = 'red';
+            ctx.fillStyle = '#FFD700'; /* طلایی به‌جای قرمز */
         } else if (this.type === 'square') {
             ctx.rect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
-            ctx.fillStyle = 'blue';
+            ctx.fillStyle = '#00B7EB'; /* آبی روشن */
         } else if (this.type === 'triangle') {
             ctx.moveTo(this.x, this.y - this.size / 2);
             ctx.lineTo(this.x - this.size / 2, this.y + this.size / 2);
             ctx.lineTo(this.x + this.size / 2, this.y + this.size / 2);
             ctx.closePath();
-            ctx.fillStyle = 'green';
+            ctx.fillStyle = '#32CD32'; /* سبز روشن */
         }
         ctx.fill();
         ctx.globalAlpha = 1;
@@ -67,15 +71,71 @@ class Target {
     }
 }
 
+function drawWeapon() {
+    ctx.beginPath();
+    if (currentWeapon === 'blackDot') {
+        ctx.arc(50, canvas.height - 50, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#000';
+        ctx.fill();
+    } else if (currentWeapon === 'line') {
+        ctx.moveTo(40, canvas.height - 50);
+        ctx.lineTo(60, canvas.height - 50);
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = '#000';
+        ctx.stroke();
+    } else if (currentWeapon === 'whiteDot') {
+        ctx.arc(50, canvas.height - 50, 10, 0, Math.PI * 2);
+        ctx.fillStyle = '#FFF';
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        ctx.fill();
+        ctx.stroke();
+    }
+    ctx.closePath();
+}
+
 function startGame() {
     introScreen.style.display = 'none';
     canvas.style.display = 'block';
     infoDisplay.style.display = 'block';
+    gameOverScreen.style.display = 'none';
     gameRunning = true;
+    score = 0;
+    stage = 1;
+    totalTargets = 0;
+    correctHits = 0;
+    scoreDisplay.textContent = `Score: ${score}`;
+    stageDisplay.textContent = `Stage: ${stage}`;
+    correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
     showStageMessage();
     startTimer();
     spawnTargets();
     animate();
+}
+
+function restartGame() {
+    gameOverScreen.style.display = 'none';
+    score = 0;
+    stage = 1;
+    totalTargets = 0;
+    correctHits = 0;
+    targets = [];
+    gameRunning = true;
+    scoreDisplay.textContent = `Score: ${score}`;
+    stageDisplay.textContent = `Stage: ${stage}`;
+    correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+    showStageMessage();
+    startTimer();
+    spawnTargets();
+    animate();
+}
+
+function exitGame() {
+    gameRunning = false;
+    canvas.style.display = 'none';
+    infoDisplay.style.display = 'none';
+    gameOverScreen.style.display = 'none';
+    introScreen.style.display = 'block';
 }
 
 function showStageMessage() {
@@ -110,36 +170,30 @@ function spawnTarget() {
 }
 
 function spawnTargets() {
+    clearInterval(window.spawnInterval);
     const interval = stageSettings[stage - 1].spawnInterval;
-    setInterval(spawnTarget, interval);
+    window.spawnInterval = setInterval(spawnTarget, interval);
 }
 
 function checkStageEnd() {
     clearInterval(timerInterval);
+    clearInterval(window.spawnInterval);
     const hitPercentage = (correctHits / totalTargets) * 100;
     const requiredPercentage = stageSettings[stage - 1].hitPercentage;
+    gameRunning = false;
+    gameOverScreen.style.display = 'block';
     if (hitPercentage >= requiredPercentage) {
         stage++;
         if (stage > stageSettings.length) {
-            messageDisplay.textContent = 'You won the game!';
-            gameRunning = false;
-            return;
+            gameOverMessage.textContent = 'You won the game!';
         } else {
-            messageDisplay.textContent = `Stage ${stage} cleared! Get ready!`;
-            stageDisplay.textContent = `Stage: ${stage}`;
-            setTimeout(showStageMessage, 2000);
+            gameOverMessage.textContent = `Stage ${stage - 1} cleared! Get ready for Stage ${stage}!`;
+            setTimeout(restartGame, 3000);
+            return;
         }
     } else {
-        messageDisplay.textContent = 'Game over! Try again.';
-        gameRunning = false;
-        return;
+        gameOverMessage.textContent = 'Game over! Try again.';
     }
-    targets = [];
-    totalTargets = 0;
-    correctHits = 0;
-    timeLeft = 30;
-    timerDisplay.textContent = `Time: ${timeLeft}`;
-    startTimer();
 }
 
 function animate() {
@@ -150,6 +204,7 @@ function animate() {
         target.update();
         target.draw();
     });
+    drawWeapon();
     requestAnimationFrame(animate);
 }
 
@@ -170,7 +225,8 @@ canvas.addEventListener('click', (e) => {
                 score += 1;
                 correctHits++;
                 scoreDisplay.textContent = `Score: ${score}`;
-                target.opacity = 0.9; // انیمیشن محو شدن
+                correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+                target.opacity = 0.9;
             }
             return false;
         }
@@ -182,9 +238,22 @@ canvas.addEventListener('click', (e) => {
 
 document.addEventListener('keydown', (e) => {
     if (!gameRunning) return;
-    if (e.key === '1' || e.key === 'Control') currentWeapon = 'blackDot';
-    if ((e.key === '2' || e.key === 'Alt') && stage >= 2) currentWeapon = 'line';
-    if ((e.key === '3' || e.key === 'Space') && stage >= 3) currentWeapon = 'whiteDot';
+    let weaponChanged = false;
+    if (e.key === '1' || e.key === 'Control') {
+        currentWeapon = 'blackDot';
+        weaponChanged = true;
+    }
+    if ((e.key === '2' || e.key === 'Alt') && stage >= 2) {
+        currentWeapon = 'line';
+        weaponChanged = true;
+    }
+    if ((e.key === '3' || e.key === 'Space') && stage >= 3) {
+        currentWeapon = 'whiteDot';
+        weaponChanged = true;
+    }
+    if (weaponChanged) {
+        weaponDisplay.textContent = `Weapon: ${currentWeapon === 'blackDot' ? 'Black Dot' : currentWeapon === 'line' ? 'Line' : 'White Dot'}`;
+    }
 });
 
 introScreen.style.display = 'block';
