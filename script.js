@@ -24,7 +24,7 @@ let currentWeapon = 'blackDot';
 let gameRunning = false;
 
 const stageSettings = [
-    { hitPercentage: 60, spawnInterval: 1000 },
+    { hitPercentage: 60, spawnInterval: 1500 }, // آهسته‌تر برای مرحله اول
     { hitPercentage: 70, spawnInterval: 800 },
     { hitPercentage: 80, spawnInterval: 600 },
     { hitPercentage: 90, spawnInterval: 500 },
@@ -47,16 +47,16 @@ class Target {
         ctx.beginPath();
         if (this.type === 'circle') {
             ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#FFD700'; /* طلایی به‌جای قرمز */
+            ctx.fillStyle = '#FFD700'; // طلایی
         } else if (this.type === 'square') {
             ctx.rect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
-            ctx.fillStyle = '#00B7EB'; /* آبی روشن */
+            ctx.fillStyle = '#00B7EB'; // آبی روشن
         } else if (this.type === 'triangle') {
             ctx.moveTo(this.x, this.y - this.size / 2);
             ctx.lineTo(this.x - this.size / 2, this.y + this.size / 2);
             ctx.lineTo(this.x + this.size / 2, this.y + this.size / 2);
             ctx.closePath();
-            ctx.fillStyle = '#32CD32'; /* سبز روشن */
+            ctx.fillStyle = '#32CD32'; // سبز روشن
         }
         ctx.fill();
         ctx.globalAlpha = 1;
@@ -69,6 +69,61 @@ class Target {
         if (this.y + this.size / 2 > canvas.height || this.y - this.size / 2 < 0) this.speedY = -this.speedY;
         if (this.opacity < 1) this.opacity -= 0.05;
     }
+}
+
+function drawBackground() {
+    ctx.save();
+    ctx.globalAlpha = 0.3; // شفافیت برای پس‌زمینه
+    if (stage === 1) {
+        // الگوی خطوط مورب
+        for (let i = -canvas.width; i < canvas.width; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i + canvas.height, canvas.height);
+            ctx.strokeStyle = '#A9A9A9';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    } else if (stage === 2) {
+        // الگوی شطرنجی
+        for (let x = 0; x < canvas.width; x += 20) {
+            for (let y = 0; y < canvas.height; y += 20) {
+                if ((x / 20 + y / 20) % 2 === 0) {
+                    ctx.fillStyle = '#87CEEB';
+                    ctx.fillRect(x, y, 20, 20);
+                }
+            }
+        }
+    } else if (stage === 3) {
+        // الگوی ستاره‌ای
+        for (let i = 0; i < 20; i++) {
+            ctx.beginPath();
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 5, 0, Math.PI * 2);
+            ctx.fillStyle = '#98FB98';
+            ctx.fill();
+        }
+    } else if (stage === 4) {
+        // الگوی موجی
+        for (let y = 0; y < canvas.height; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            for (let x = 0; x < canvas.width; x += 20) {
+                ctx.lineTo(x, y + Math.sin(x / 20) * 10);
+            }
+            ctx.strokeStyle = '#FFA500';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    } else {
+        // الگوی دایره‌های تصادفی
+        for (let i = 0; i < 15; i++) {
+            ctx.beginPath();
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 10, 0, Math.PI * 2);
+            ctx.fillStyle = '#800080';
+            ctx.fill();
+        }
+    }
+    ctx.restore();
 }
 
 function drawWeapon() {
@@ -199,6 +254,7 @@ function checkStageEnd() {
 function animate() {
     if (!gameRunning) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawBackground();
     targets = targets.filter(target => target.opacity > 0);
     targets.forEach(target => {
         target.update();
@@ -216,7 +272,7 @@ canvas.addEventListener('click', (e) => {
 
     targets = targets.filter(target => {
         const dist = Math.sqrt((mouseX - target.x) ** 2 + (mouseY - target.y) ** 2);
-        if (dist < target.size / 2) {
+        if (dist < target.size) { // افزایش حساسیت کلیک
             const isCorrect =
                 (target.type === 'circle' && currentWeapon === 'blackDot') ||
                 (target.type === 'square' && currentWeapon === 'line') ||
