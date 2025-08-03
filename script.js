@@ -13,58 +13,98 @@ let timerInterval;
 const scoreDisplay = document.getElementById('score');
 const stageDisplay = document.getElementById('stage');
 const timerDisplay = document.getElementById('timer');
-const weaponDisplay = document.getElementById('weapon');
 const correctHitsDisplay = document.getElementById('correct-hits');
 const messageDisplay = document.getElementById('message');
 const introScreen = document.getElementById('intro');
 const infoDisplay = document.getElementById('info');
+const stageClearedScreen = document.getElementById('stage-cleared');
+const stageClearedMessage = document.getElementById('stage-cleared-message');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverMessage = document.getElementById('game-over-message');
-let currentWeapon = 'blackDot';
 let gameRunning = false;
 
 const stageSettings = [
-    { hitPercentage: 60, spawnInterval: 2000, speed: 1.5 }, // مرحله اول آسون‌تر
-    { hitPercentage: 70, spawnInterval: 800, speed: 2 },
-    { hitPercentage: 80, spawnInterval: 600, speed: 3 },
-    { hitPercentage: 90, spawnInterval: 500, speed: 4 },
-    { hitPercentage: 100, spawnInterval: 400, speed: 5 }
+    { hitPercentage: 60, spawnInterval: 3000, speed: 1.5, size: 38 }, // 1cm
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 3, size: 38 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 }, // 0.5cm
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4.5, size: 19 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4.5, size: 19 },
+    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 }, // 0.25cm
+    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 },
+    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 }
 ];
 
 class Target {
     constructor(type) {
-        this.type = type;
+        this.type = type; // 'rain' یا 'snow'
         this.x = Math.random() * (canvas.width - 50);
         this.y = 0; // شروع از بالای صفحه
-        this.size = 30;
-        this.speedY = stageSettings[stage - 1].speed; // فقط حرکت عمودی
+        this.size = stageSettings[stage - 1].size;
+        this.speedY = stageSettings[stage - 1].speed;
         this.opacity = 1;
+        this.variant = Math.floor(Math.random() * 3); // تنوع شکل‌ها
     }
 
     draw() {
         ctx.globalAlpha = this.opacity;
         ctx.beginPath();
-        if (this.type === 'circle') {
-            ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#FFD700'; // طلایی
-        } else if (this.type === 'square') {
-            ctx.rect(this.x - this.size / 2, this.y - this.size / 2, this.size, this.size);
-            ctx.fillStyle = '#00B7EB'; // آبی روشن
-        } else if (this.type === 'triangle') {
-            ctx.moveTo(this.x, this.y - this.size / 2);
-            ctx.lineTo(this.x - this.size / 2, this.y + this.size / 2);
-            ctx.lineTo(this.x + this.size / 2, this.y + this.size / 2);
-            ctx.closePath();
-            ctx.fillStyle = '#32CD32'; // سبز روشن
+        if (this.type === 'rain') {
+            // دونه‌های بارون (خطوط با طول‌های مختلف)
+            let length = this.size * (0.5 + this.variant * 0.2);
+            ctx.moveTo(this.x, this.y);
+            ctx.lineTo(this.x, this.y + length);
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#0288d1';
+            ctx.stroke();
+        } else {
+            // دونه‌های برف (ستاره‌ای یا دایره)
+            if (this.variant === 0) {
+                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.fillStyle = '#fff';
+                ctx.fill();
+            } else if (this.variant === 1) {
+                ctx.moveTo(this.x, this.y - this.size / 2);
+                ctx.lineTo(this.x, this.y + this.size / 2);
+                ctx.moveTo(this.x - this.size / 2, this.y);
+                ctx.lineTo(this.x + this.size / 2, this.y);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+            } else {
+                ctx.moveTo(this.x, this.y - this.size / 2);
+                ctx.lineTo(this.x, this.y + this.size / 2);
+                ctx.moveTo(this.x - this.size / 2, this.y);
+                ctx.lineTo(this.x + this.size / 2, this.y);
+                ctx.moveTo(this.x - this.size / 2.8, this.y - this.size / 2.8);
+                ctx.lineTo(this.x + this.size / 2.8, this.y + this.size / 2.8);
+                ctx.moveTo(this.x - this.size / 2.8, this.y + this.size / 2.8);
+                ctx.lineTo(this.x + this.size / 2.8, this.y - this.size / 2.8);
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = '#fff';
+                ctx.stroke();
+            }
         }
-        ctx.fill();
         ctx.globalAlpha = 1;
     }
 
     update() {
         this.y += this.speedY;
         if (this.y - this.size / 2 > canvas.height) {
-            // هدف از صفحه خارج می‌شه
             return false;
         }
         if (this.opacity < 1) this.opacity -= 0.05;
@@ -74,80 +114,71 @@ class Target {
 
 function drawBackground() {
     ctx.save();
-    ctx.globalAlpha = 0.2; // شفافیت برای پس‌زمینه
-    if (stage === 1) {
-        // چمن و ابر (شبیه Super Mario)
-        ctx.fillStyle = '#7CFC00';
-        ctx.fillRect(0, canvas.height - 100, canvas.width, 100); // چمن
-        ctx.fillStyle = '#FFF';
-        ctx.fillRect(100, 50, 80, 40); // ابر 1
-        ctx.fillRect(300, 80, 100, 50); // ابر 2
-    } else if (stage === 2) {
-        // آجر و آسمان آبی
-        ctx.fillStyle = '#87CEEB';
-        ctx.fillRect(0, 0, canvas.width, canvas.height); // آسمان
-        for (let x = 0; x < canvas.width; x += 40) {
-            for (let y = canvas.height - 120; y < canvas.height; y += 40) {
-                ctx.fillStyle = '#8B4513';
-                ctx.fillRect(x, y, 38, 38); // آجر
-            }
-        }
-    } else if (stage === 3) {
-        // سنگ و ستاره
-        ctx.fillStyle = '#2F4F4F';
-        ctx.fillRect(0, 0, canvas.width, canvas.height); // پس‌زمینه سنگی
+    ctx.globalAlpha = 0.2;
+    if (stage <= 5) {
+        // برف سبک با زمین یخ‌زده
+        ctx.fillStyle = '#b0e0e6';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
         for (let i = 0; i < 10; i++) {
             ctx.beginPath();
             ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height / 2, 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#FFFF00';
+            ctx.fillStyle = '#fff';
             ctx.fill();
         }
-    } else if (stage === 4) {
-        // جنگل و درخت
-        ctx.fillStyle = '#228B22';
-        ctx.fillRect(0, 0, canvas.width, canvas.height); // پس‌زمینه سبز
-        for (let x = 0; x < canvas.width; x += 60) {
-            ctx.fillStyle = '#006400';
-            ctx.fillRect(x, canvas.height - 150, 40, 100); // درخت
+    } else if (stage <= 10) {
+        // برف سنگین با آسمان تیره
+        ctx.fillStyle = '#4682b4';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+        for (let i = 0; i < 15; i++) {
             ctx.beginPath();
-            ctx.arc(x + 20, canvas.height - 170, 30, 0, Math.PI * 2);
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
             ctx.fill();
         }
+    } else if (stage <= 15) {
+        // طوفان برفی با الگوی موجی
+        ctx.fillStyle = '#1e90ff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        for (let y = 0; y < canvas.height; y += 20) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            for (let x = 0; x < canvas.width; x += 20) {
+                ctx.lineTo(x, y + Math.sin(x / 20) * 10);
+            }
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+        }
+    } else if (stage <= 20) {
+        // کوه‌های برفی
+        ctx.fillStyle = '#87ceeb';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height);
+        ctx.lineTo(200, canvas.height - 150);
+        ctx.lineTo(400, canvas.height - 100);
+        ctx.lineTo(600, canvas.height - 200);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.fill();
     } else {
-        // فضا و سیاره
+        // شب برفی با ستاره
         ctx.fillStyle = '#191970';
-        ctx.fillRect(0, 0, canvas.width, canvas.height); // پس‌زمینه فضایی
-        for (let i = 0; i < 5; i++) {
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, canvas.height - 120, canvas.width, 120);
+        for (let i = 0; i < 10; i++) {
             ctx.beginPath();
-            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 15, 0, Math.PI * 2);
-            ctx.fillStyle = '#9932CC';
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height / 2, 4, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
             ctx.fill();
         }
     }
     ctx.restore();
-}
-
-function drawWeapon() {
-    ctx.beginPath();
-    if (currentWeapon === 'blackDot') {
-        ctx.arc(50, canvas.height - 50, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#000';
-        ctx.fill();
-    } else if (currentWeapon === 'line') {
-        ctx.moveTo(40, canvas.height - 50);
-        ctx.lineTo(60, canvas.height - 50);
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = '#000';
-        ctx.stroke();
-    } else if (currentWeapon === 'whiteDot') {
-        ctx.arc(50, canvas.height - 50, 10, 0, Math.PI * 2);
-        ctx.fillStyle = '#FFF';
-        ctx.strokeStyle = '#000';
-        ctx.lineWidth = 2;
-        ctx.fill();
-        ctx.stroke();
-    }
-    ctx.closePath();
 }
 
 function startGame() {
@@ -155,6 +186,7 @@ function startGame() {
     canvas.style.display = 'block';
     infoDisplay.style.display = 'block';
     gameOverScreen.style.display = 'none';
+    stageClearedScreen.style.display = 'none';
     gameRunning = true;
     score = 0;
     stage = 1;
@@ -191,15 +223,32 @@ function exitGame() {
     canvas.style.display = 'none';
     infoDisplay.style.display = 'none';
     gameOverScreen.style.display = 'none';
+    stageClearedScreen.style.display = 'none';
     introScreen.style.display = 'block';
+}
+
+function nextStage() {
+    stageClearedScreen.style.display = 'none';
+    score = 0;
+    totalTargets = 0;
+    correctHits = 0;
+    targets = [];
+    gameRunning = true;
+    scoreDisplay.textContent = `Score: ${score}`;
+    stageDisplay.textContent = `Stage: ${stage}`;
+    correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+    showStageMessage();
+    startTimer();
+    spawnTargets();
+    animate();
 }
 
 function showStageMessage() {
     let message = '';
-    if (stage === 1) message = 'Stage 1: Shoot circles with black dot (1 or Ctrl).';
-    else if (stage === 2) message = 'Stage 2: Shoot circles with black dot (1 or Ctrl), squares with line (2 or Alt).';
-    else if (stage === 3) message = 'Stage 3: Shoot circles (1 or Ctrl), squares (2 or Alt), triangles with white dot (3 or Space).';
-    else message = `Stage ${stage}: Hit ${stageSettings[stage - 1].hitPercentage}% of correct targets!`;
+    if (stage === 1) message = 'Stage 1: Click raindrops and snowflakes to destroy them.';
+    else if (stage === 11) message = 'Stage 11: Targets are now smaller!';
+    else if (stage === 21) message = 'Stage 21: Targets are even smaller!';
+    else message = `Stage ${stage}: Hit ${stageSettings[stage - 1].hitPercentage}% of targets!`;
     messageDisplay.textContent = message;
     setTimeout(() => messageDisplay.textContent = '', 3000);
 }
@@ -217,10 +266,7 @@ function startTimer() {
 }
 
 function spawnTarget() {
-    let types = ['circle'];
-    if (stage >= 2) types.push('square');
-    if (stage >= 3) types.push('triangle');
-    const type = types[Math.floor(Math.random() * types.length)];
+    const type = Math.random() < 0.5 ? 'rain' : 'snow';
     targets.push(new Target(type));
     totalTargets++;
 }
@@ -237,17 +283,17 @@ function checkStageEnd() {
     const hitPercentage = totalTargets > 0 ? (correctHits / totalTargets) * 100 : 0;
     const requiredPercentage = stageSettings[stage - 1].hitPercentage;
     gameRunning = false;
-    gameOverScreen.style.display = 'block';
     if (hitPercentage >= requiredPercentage) {
         stage++;
         if (stage > stageSettings.length) {
+            gameOverScreen.style.display = 'block';
             gameOverMessage.textContent = 'You won the game!';
         } else {
-            gameOverMessage.textContent = `Stage ${stage - 1} cleared! Get ready for Stage ${stage}!`;
-            setTimeout(restartGame, 3000);
-            return;
+            stageClearedScreen.style.display = 'block';
+            stageClearedMessage.textContent = `Stage ${stage - 1} cleared!`;
         }
     } else {
+        gameOverScreen.style.display = 'block';
         gameOverMessage.textContent = 'Game over! Try again.';
     }
 }
@@ -258,7 +304,6 @@ function animate() {
     drawBackground();
     targets = targets.filter(target => target.update());
     targets.forEach(target => target.draw());
-    drawWeapon();
     requestAnimationFrame(animate);
 }
 
@@ -271,43 +316,17 @@ canvas.addEventListener('click', (e) => {
     targets = targets.filter(target => {
         const dist = Math.sqrt((mouseX - target.x) ** 2 + (mouseY - target.y) ** 2);
         if (dist < target.size) {
-            const isCorrect =
-                (target.type === 'circle' && currentWeapon === 'blackDot') ||
-                (target.type === 'square' && currentWeapon === 'line') ||
-                (target.type === 'triangle' && currentWeapon === 'whiteDot');
-            if (isCorrect) {
-                score += 1;
-                correctHits++;
-                scoreDisplay.textContent = `Score: ${score}`;
-                correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
-                target.opacity = 0.9;
-            }
+            score += 1;
+            correctHits++;
+            scoreDisplay.textContent = `Score: ${score}`;
+            correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+            target.opacity = 0.9;
             return false;
         }
         return true;
     });
 
-    if (totalTargets >= 8) checkStageEnd(); // کاهش تعداد اهداف به 8
-});
-
-document.addEventListener('keydown', (e) => {
-    if (!gameRunning) return;
-    let weaponChanged = false;
-    if (e.key === '1' || e.key === 'Control') {
-        currentWeapon = 'blackDot';
-        weaponChanged = true;
-    }
-    if ((e.key === '2' || e.key === 'Alt') && stage >= 2) {
-        currentWeapon = 'line';
-        weaponChanged = true;
-    }
-    if ((e.key === '3' || e.key === 'Space') && stage >= 3) {
-        currentWeapon = 'whiteDot';
-        weaponChanged = true;
-    }
-    if (weaponChanged) {
-        weaponDisplay.textContent = `Weapon: ${currentWeapon === 'blackDot' ? 'Black Dot' : currentWeapon === 'line' ? 'Line' : 'White Dot'}`;
-    }
+    if (totalTargets >= 8) checkStageEnd();
 });
 
 introScreen.style.display = 'block';
