@@ -24,6 +24,7 @@ const stageClearedScreen = document.getElementById('stage-cleared');
 const stageClearedMessage = document.getElementById('stage-cleared-message');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverMessage = document.getElementById('game-over-message');
+const loadingScreen = document.getElementById('loading');
 let gameRunning = false;
 let shootAnimations = [];
 
@@ -41,7 +42,6 @@ function resizeCanvas() {
 }
 
 window.addEventListener('resize', resizeCanvas);
-resizeCanvas();
 
 const stageSettings = [
     { hitPercentage: 60, spawnInterval: 3000, speed: 1.5, size: 38 * canvas.width / 800 },
@@ -83,6 +83,8 @@ class Target {
     draw() {
         ctx.save();
         ctx.globalAlpha = this.opacity;
+        ctx.shadowBlur = 10;
+        ctx.shadowColor = '#81d4fa';
         if (this.type === 'rain') {
             let length = this.size * (0.5 + this.variant * 0.2);
             let gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + length);
@@ -90,43 +92,46 @@ class Target {
             gradient.addColorStop(1, '#4fc3f7');
             ctx.beginPath();
             ctx.moveTo(this.x, this.y);
-            ctx.lineTo(this.x, this.y + length);
-            ctx.lineWidth = 4;
-            ctx.strokeStyle = gradient;
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(this.x, this.y + length, 2, 0, Math.PI * 2);
-            ctx.fillStyle = '#4fc3f7';
+            ctx.lineTo(this.x, this.y + length * 0.7);
+            ctx.quadraticCurveTo(this.x, this.y + length, this.x - length / 4, this.y + length);
+            ctx.lineTo(this.x + length / 4, this.y + length);
+            ctx.quadraticCurveTo(this.x, this.y + length * 0.7, this.x, this.y);
+            ctx.fillStyle = gradient;
             ctx.fill();
         } else {
-            ctx.beginPath();
+            ctx.shadowColor = '#fff';
             if (this.variant === 0) {
-                ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y - this.size / 2);
+                ctx.lineTo(this.x + this.size / 3, this.y + this.size / 6);
+                ctx.lineTo(this.x - this.size / 3, this.y + this.size / 6);
+                ctx.closePath();
+                ctx.moveTo(this.x, this.y + this.size / 2);
+                ctx.lineTo(this.x + this.size / 3, this.y - this.size / 6);
+                ctx.lineTo(this.x - this.size / 3, this.y - this.size / 6);
+                ctx.closePath();
                 ctx.fillStyle = '#fff';
                 ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = '#b0e0e6';
-                ctx.stroke();
             } else if (this.variant === 1) {
-                ctx.moveTo(this.x, this.y - this.size / 2);
-                ctx.lineTo(this.x, this.y + this.size / 2);
-                ctx.moveTo(this.x - this.size / 2, this.y);
-                ctx.lineTo(this.x + this.size / 2, this.y);
-                ctx.lineWidth = 3;
-                ctx.strokeStyle = '#fff';
-                ctx.stroke();
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    let angle = (Math.PI / 3) * i;
+                    let r = i % 2 === 0 ? this.size / 2 : this.size / 4;
+                    ctx.lineTo(this.x + Math.cos(angle) * r, this.y + Math.sin(angle) * r);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#fff';
+                ctx.fill();
             } else {
-                ctx.moveTo(this.x, this.y - this.size / 2);
-                ctx.lineTo(this.x, this.y + this.size / 2);
-                ctx.moveTo(this.x - this.size / 2, this.y);
-                ctx.lineTo(this.x + this.size / 2, this.y);
-                ctx.moveTo(this.x - this.size / 2.8, this.y - this.size / 2.8);
-                ctx.lineTo(this.x + this.size / 2.8, this.y + this.size / 2.8);
-                ctx.moveTo(this.x - this.size / 2.8, this.y + this.size / 2.8);
-                ctx.lineTo(this.x + this.size / 2.8, this.y - this.size / 2.8);
-                ctx.lineWidth = 2;
-                ctx.strokeStyle = '#fff';
-                ctx.stroke();
+                ctx.beginPath();
+                for (let i = 0; i < 8; i++) {
+                    let angle = (Math.PI / 4) * i;
+                    let r = i % 2 === 0 ? this.size / 2 : this.size / 3;
+                    ctx.lineTo(this.x + Math.cos(angle) * r, this.y + Math.sin(angle) * r);
+                }
+                ctx.closePath();
+                ctx.fillStyle = '#fff';
+                ctx.fill();
             }
         }
         ctx.restore();
@@ -173,7 +178,7 @@ function drawBackground() {
     ctx.save();
     ctx.globalAlpha = 0.2;
     if (stage <= 5) {
-        ctx.fillStyle = '#191970'; // شب برفی
+        ctx.fillStyle = '#191970';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, canvas.height - 80 * canvas.height / 600, canvas.width, 80 * canvas.height / 600);
@@ -184,7 +189,7 @@ function drawBackground() {
             ctx.fill();
         }
     } else if (stage <= 10) {
-        ctx.fillStyle = '#4682b4'; // غروب برفی
+        ctx.fillStyle = '#4682b4';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, canvas.height - 100 * canvas.height / 600, canvas.width, 100 * canvas.height / 600);
@@ -195,7 +200,7 @@ function drawBackground() {
             ctx.fill();
         }
     } else if (stage <= 15) {
-        ctx.fillStyle = '#87ceeb'; // آسمان ابری
+        ctx.fillStyle = '#87ceeb';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         for (let y = 0; y < canvas.height; y += 20 * canvas.height / 600) {
             ctx.beginPath();
@@ -208,7 +213,7 @@ function drawBackground() {
             ctx.stroke();
         }
     } else if (stage <= 20) {
-        ctx.fillStyle = '#b0e0e6'; // روز برفی
+        ctx.fillStyle = '#b0e0e6';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
         ctx.beginPath();
@@ -219,7 +224,7 @@ function drawBackground() {
         ctx.lineTo(canvas.width, canvas.height);
         ctx.fill();
     } else {
-        ctx.fillStyle = '#e0f7fa'; // روز آفتابی برفی
+        ctx.fillStyle = '#e0f7fa';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
         ctx.fillRect(0, canvas.height - 120 * canvas.height / 600, canvas.width, 120 * canvas.height / 600);
@@ -230,7 +235,31 @@ function drawBackground() {
             ctx.fill();
         }
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
+}
+
+function loadAssets() {
+    const promises = [
+        new Promise(resolve => {
+            shootSound.oncanplaythrough = resolve;
+            shootSound.onerror = resolve;
+        }),
+        new Promise(resolve => {
+            rainSound.oncanplaythrough = resolve;
+            rainSound.onerror = resolve;
+        }),
+        new Promise(resolve => {
+            snowSound.oncanplaythrough = resolve;
+            snowSound.onerror = resolve;
+        })
+    ];
+    Promise.all(promises).then(() => {
+        loadingScreen.style.display = 'none';
+        document.getElementById('game-container').style.display = 'block';
+        introScreen.style.display = 'block';
+        resizeCanvas();
+    });
 }
 
 function startGame() {
@@ -324,7 +353,7 @@ function startTimer() {
 }
 
 function spawnTarget() {
-    const type = Math.random() < 0.8 ? 'rain' : 'snow'; // 80% بارون، 20% برف
+    const type = Math.random() < 0.8 ? 'rain' : 'snow';
     targets.push(new Target(type));
     totalTargets++;
 }
@@ -409,4 +438,5 @@ canvas.addEventListener('touchstart', (e) => {
     handleInput(x, y);
 });
 
-introScreen.style.display = 'block';
+loadingScreen.style.display = 'block';
+loadAssets();
