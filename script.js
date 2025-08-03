@@ -1,19 +1,22 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-canvas.width = 800;
-canvas.height = 600;
 
 let score = 0;
 let stage = 1;
 let targets = [];
 let totalTargets = 0;
 let correctHits = 0;
+let combo = 0;
 let timeLeft = 30;
 let timerInterval;
+let shootSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_5b3b1e4f9b.mp3');
+let rainSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_4e3b1e4f9c.mp3');
+let snowSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_3c2b1e4f9d.mp3');
 const scoreDisplay = document.getElementById('score');
 const stageDisplay = document.getElementById('stage');
 const timerDisplay = document.getElementById('timer');
 const correctHitsDisplay = document.getElementById('correct-hits');
+const comboDisplay = document.getElementById('combo');
 const messageDisplay = document.getElementById('message');
 const introScreen = document.getElementById('intro');
 const infoDisplay = document.getElementById('info');
@@ -22,61 +25,88 @@ const stageClearedMessage = document.getElementById('stage-cleared-message');
 const gameOverScreen = document.getElementById('game-over');
 const gameOverMessage = document.getElementById('game-over-message');
 let gameRunning = false;
+let shootAnimations = [];
+
+function resizeCanvas() {
+    const maxWidth = window.innerWidth * 0.9;
+    const maxHeight = window.innerHeight * 0.9;
+    const aspectRatio = 4 / 3;
+    if (maxWidth / maxHeight > aspectRatio) {
+        canvas.height = Math.min(maxHeight, 600);
+        canvas.width = canvas.height * aspectRatio;
+    } else {
+        canvas.width = Math.min(maxWidth, 800);
+        canvas.height = canvas.width / aspectRatio;
+    }
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
 
 const stageSettings = [
-    { hitPercentage: 60, spawnInterval: 3000, speed: 1.5, size: 38 }, // 1cm
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 },
-    { hitPercentage: 70, spawnInterval: 2000, speed: 3, size: 38 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 }, // 0.5cm
-    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 4.5, size: 19 },
-    { hitPercentage: 80, spawnInterval: 1000, speed: 4.5, size: 19 },
-    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 }, // 0.25cm
-    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 },
-    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 }
+    { hitPercentage: 60, spawnInterval: 3000, speed: 1.5, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 2.5, size: 38 * canvas.width / 800 },
+    { hitPercentage: 70, spawnInterval: 2000, speed: 3, size: 38 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 3.5, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4.5, size: 19 * canvas.width / 800 },
+    { hitPercentage: 80, spawnInterval: 1000, speed: 4.5, size: 19 * canvas.width / 800 },
+    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 * canvas.width / 800 },
+    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 * canvas.width / 800 },
+    { hitPercentage: 90, spawnInterval: 1000, speed: 5, size: 9.5 * canvas.width / 800 }
 ];
 
 class Target {
     constructor(type) {
-        this.type = type; // 'rain' یا 'snow'
-        this.x = Math.random() * (canvas.width - 50);
-        this.y = 0; // شروع از بالای صفحه
+        this.type = type;
+        this.x = Math.random() * (canvas.width - stageSettings[stage - 1].size);
+        this.y = 0;
         this.size = stageSettings[stage - 1].size;
-        this.speedY = stageSettings[stage - 1].speed;
+        this.speedY = stageSettings[stage - 1].speed * canvas.height / 600;
         this.opacity = 1;
-        this.variant = Math.floor(Math.random() * 3); // تنوع شکل‌ها
+        this.variant = Math.floor(Math.random() * 3);
     }
 
     draw() {
+        ctx.save();
         ctx.globalAlpha = this.opacity;
-        ctx.beginPath();
         if (this.type === 'rain') {
-            // دونه‌های بارون (خطوط با طول‌های مختلف)
             let length = this.size * (0.5 + this.variant * 0.2);
+            let gradient = ctx.createLinearGradient(this.x, this.y, this.x, this.y + length);
+            gradient.addColorStop(0, '#0288d1');
+            gradient.addColorStop(1, '#4fc3f7');
+            ctx.beginPath();
             ctx.moveTo(this.x, this.y);
             ctx.lineTo(this.x, this.y + length);
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = '#0288d1';
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = gradient;
             ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(this.x, this.y + length, 2, 0, Math.PI * 2);
+            ctx.fillStyle = '#4fc3f7';
+            ctx.fill();
         } else {
-            // دونه‌های برف (ستاره‌ای یا دایره)
+            ctx.beginPath();
             if (this.variant === 0) {
                 ctx.arc(this.x, this.y, this.size / 2, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
                 ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#b0e0e6';
+                ctx.stroke();
             } else if (this.variant === 1) {
                 ctx.moveTo(this.x, this.y - this.size / 2);
                 ctx.lineTo(this.x, this.y + this.size / 2);
@@ -99,12 +129,14 @@ class Target {
                 ctx.stroke();
             }
         }
-        ctx.globalAlpha = 1;
+        ctx.restore();
     }
 
     update() {
         this.y += this.speedY;
         if (this.y - this.size / 2 > canvas.height) {
+            combo = 0;
+            comboDisplay.textContent = `Combo: ${combo}`;
             return false;
         }
         if (this.opacity < 1) this.opacity -= 0.05;
@@ -112,68 +144,88 @@ class Target {
     }
 }
 
+class ShootAnimation {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.opacity = 1;
+        this.size = 10 * canvas.width / 800;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.opacity;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = '#000';
+        ctx.fill();
+        ctx.restore();
+    }
+
+    update() {
+        this.opacity -= 0.1;
+        this.size += 0.5;
+        return this.opacity > 0;
+    }
+}
+
 function drawBackground() {
     ctx.save();
     ctx.globalAlpha = 0.2;
     if (stage <= 5) {
-        // برف سبک با زمین یخ‌زده
-        ctx.fillStyle = '#b0e0e6';
+        ctx.fillStyle = '#191970'; // شب برفی
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
-        ctx.fillRect(0, canvas.height - 80, canvas.width, 80);
+        ctx.fillRect(0, canvas.height - 80 * canvas.height / 600, canvas.width, 80 * canvas.height / 600);
         for (let i = 0; i < 10; i++) {
             ctx.beginPath();
-            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height / 2, 5, 0, Math.PI * 2);
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height / 2, 5 * canvas.width / 800, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
             ctx.fill();
         }
     } else if (stage <= 10) {
-        // برف سنگین با آسمان تیره
-        ctx.fillStyle = '#4682b4';
+        ctx.fillStyle = '#4682b4'; // غروب برفی
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
-        ctx.fillRect(0, canvas.height - 100, canvas.width, 100);
+        ctx.fillRect(0, canvas.height - 100 * canvas.height / 600, canvas.width, 100 * canvas.height / 600);
         for (let i = 0; i < 15; i++) {
             ctx.beginPath();
-            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 3, 0, Math.PI * 2);
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height, 3 * canvas.width / 800, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
             ctx.fill();
         }
     } else if (stage <= 15) {
-        // طوفان برفی با الگوی موجی
-        ctx.fillStyle = '#1e90ff';
+        ctx.fillStyle = '#87ceeb'; // آسمان ابری
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        for (let y = 0; y < canvas.height; y += 20) {
+        for (let y = 0; y < canvas.height; y += 20 * canvas.height / 600) {
             ctx.beginPath();
             ctx.moveTo(0, y);
             for (let x = 0; x < canvas.width; x += 20) {
-                ctx.lineTo(x, y + Math.sin(x / 20) * 10);
+                ctx.lineTo(x, y + Math.sin(x / 20) * 10 * canvas.height / 600);
             }
             ctx.strokeStyle = '#fff';
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 2 * canvas.width / 800;
             ctx.stroke();
         }
     } else if (stage <= 20) {
-        // کوه‌های برفی
-        ctx.fillStyle = '#87ceeb';
+        ctx.fillStyle = '#b0e0e6'; // روز برفی
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
         ctx.beginPath();
         ctx.moveTo(0, canvas.height);
-        ctx.lineTo(200, canvas.height - 150);
-        ctx.lineTo(400, canvas.height - 100);
-        ctx.lineTo(600, canvas.height - 200);
+        ctx.lineTo(200 * canvas.width / 800, canvas.height - 150 * canvas.height / 600);
+        ctx.lineTo(400 * canvas.width / 800, canvas.height - 100 * canvas.height / 600);
+        ctx.lineTo(600 * canvas.width / 800, canvas.height - 200 * canvas.height / 600);
         ctx.lineTo(canvas.width, canvas.height);
         ctx.fill();
     } else {
-        // شب برفی با ستاره
-        ctx.fillStyle = '#191970';
+        ctx.fillStyle = '#e0f7fa'; // روز آفتابی برفی
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#fff';
-        ctx.fillRect(0, canvas.height - 120, canvas.width, 120);
+        ctx.fillRect(0, canvas.height - 120 * canvas.height / 600, canvas.width, 120 * canvas.height / 600);
         for (let i = 0; i < 10; i++) {
             ctx.beginPath();
-            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height / 2, 4, 0, Math.PI * 2);
+            ctx.arc(Math.random() * canvas.width, Math.random() * canvas.height / 2, 4 * canvas.width / 800, 0, Math.PI * 2);
             ctx.fillStyle = '#fff';
             ctx.fill();
         }
@@ -192,9 +244,11 @@ function startGame() {
     stage = 1;
     totalTargets = 0;
     correctHits = 0;
+    combo = 0;
     scoreDisplay.textContent = `Score: ${score}`;
     stageDisplay.textContent = `Stage: ${stage}`;
     correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+    comboDisplay.textContent = `Combo: ${combo}`;
     showStageMessage();
     startTimer();
     spawnTargets();
@@ -207,11 +261,13 @@ function restartGame() {
     stage = 1;
     totalTargets = 0;
     correctHits = 0;
+    combo = 0;
     targets = [];
     gameRunning = true;
     scoreDisplay.textContent = `Score: ${score}`;
     stageDisplay.textContent = `Stage: ${stage}`;
     correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+    comboDisplay.textContent = `Combo: ${combo}`;
     showStageMessage();
     startTimer();
     spawnTargets();
@@ -232,11 +288,13 @@ function nextStage() {
     score = 0;
     totalTargets = 0;
     correctHits = 0;
+    combo = 0;
     targets = [];
     gameRunning = true;
     scoreDisplay.textContent = `Score: ${score}`;
     stageDisplay.textContent = `Stage: ${stage}`;
     correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+    comboDisplay.textContent = `Combo: ${combo}`;
     showStageMessage();
     startTimer();
     spawnTargets();
@@ -245,7 +303,7 @@ function nextStage() {
 
 function showStageMessage() {
     let message = '';
-    if (stage === 1) message = 'Stage 1: Click raindrops and snowflakes to destroy them.';
+    if (stage === 1) message = 'Stage 1: Click or tap raindrops and snowflakes to destroy them.';
     else if (stage === 11) message = 'Stage 11: Targets are now smaller!';
     else if (stage === 21) message = 'Stage 21: Targets are even smaller!';
     else message = `Stage ${stage}: Hit ${stageSettings[stage - 1].hitPercentage}% of targets!`;
@@ -266,7 +324,7 @@ function startTimer() {
 }
 
 function spawnTarget() {
-    const type = Math.random() < 0.5 ? 'rain' : 'snow';
+    const type = Math.random() < 0.8 ? 'rain' : 'snow'; // 80% بارون، 20% برف
     targets.push(new Target(type));
     totalTargets++;
 }
@@ -304,29 +362,51 @@ function animate() {
     drawBackground();
     targets = targets.filter(target => target.update());
     targets.forEach(target => target.draw());
+    shootAnimations = shootAnimations.filter(anim => anim.update());
+    shootAnimations.forEach(anim => anim.draw());
     requestAnimationFrame(animate);
 }
 
-canvas.addEventListener('click', (e) => {
+function handleInput(x, y) {
     if (!gameRunning) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
+    shootSound.play();
+    shootAnimations.push(new ShootAnimation(x, y));
+    let hit = false;
     targets = targets.filter(target => {
-        const dist = Math.sqrt((mouseX - target.x) ** 2 + (mouseY - target.y) ** 2);
+        const dist = Math.sqrt((x - target.x) ** 2 + (y - target.y) ** 2);
         if (dist < target.size) {
-            score += 1;
+            hit = true;
+            const multiplier = combo >= 3 ? 2 : combo >= 2 ? 1.5 : 1;
+            score += 1 * multiplier;
             correctHits++;
+            combo++;
             scoreDisplay.textContent = `Score: ${score}`;
             correctHitsDisplay.textContent = `Correct Hits: ${correctHits}`;
+            comboDisplay.textContent = `Combo: ${combo}`;
             target.opacity = 0.9;
+            (target.type === 'rain' ? rainSound : snowSound).play();
             return false;
         }
         return true;
     });
-
+    if (!hit) combo = 0;
+    comboDisplay.textContent = `Combo: ${combo}`;
     if (totalTargets >= 8) checkStageEnd();
+}
+
+canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    handleInput(x, y);
+});
+
+canvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const rect = canvas.getBoundingClientRect();
+    const x = e.touches[0].clientX - rect.left;
+    const y = e.touches[0].clientY - rect.top;
+    handleInput(x, y);
 });
 
 introScreen.style.display = 'block';
